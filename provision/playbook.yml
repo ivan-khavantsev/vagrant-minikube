@@ -3,24 +3,11 @@
   gather_facts: false
 
   tasks:
-    - name: Update apt cache
-      apt: 
-        update_cache: yes
       
     - name: Set timezone to Asia/Almaty
       community.general.timezone:
         name: Asia/Almaty  
 
-    - name: Install System Utilites
-      apt: 
-        name: ['mc', 'ca-certificates', 'curl', 'gnupg', 'lsb-release']
-        state: present
-
-    - name: Get Docker repository key 
-      apt_key: 
-        url: https://download.docker.com/linux/debian/gpg 
-        state: present 
-    
     - name: First time extend fs
       command: touch /home/vagrant/.provisioned_fs
       register: firsttime_fs
@@ -30,18 +17,40 @@
     - name: Extend File system to full disk
       shell: sudo resize2fs /dev/sda1
       when: firsttime_fs.changed
+
+    - name: Update apt cache
+      apt: 
+        update_cache: yes
+    
+    - name: Install System Utilites
+      apt: 
+        name: ['mc', 'ca-certificates', 'curl', 'gnupg', 'lsb-release']
+        state: present
+
+    - name: Get Kubectl repository key 
+      apt_key: 
+        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg 
+        state: present    
+        
+    - name: Add Kubectl repository
+      shell: echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee -a /etc/apt/sources.list.d/kubernetes.list
+
+
+    - name: Get Docker repository key 
+      apt_key: 
+        url: https://download.docker.com/linux/debian/gpg 
+        state: present 
     
     - name: Add Docker repository
       shell: echo "deb https://download.docker.com/linux/debian $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-      when: firsttime_fs.changed
 
     - name: Update apt cache
       apt: 
         update_cache: yes
 
-    - name: Install Docker
+    - name: Install Docker, Kubectl
       apt: 
-        name: ['docker-ce', 'docker-ce-cli', 'containerd.io']
+        name: ['docker-ce', 'docker-ce-cli', 'containerd.io', 'kubectl']
         state: present
         
     - name: Config Docker Daemon
@@ -68,26 +77,27 @@
         - "docker"
         - "containerd"    
         
+    - name: Install minikube
+      shell: curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && chmod +x minikube && install minikube /usr/local/bin/    
+      args: 
+        creates: /usr/local/bin/minikube
+        
     - name: Create a docker service directory if it does not exist
       file:
         path: /etc/systemd/system/docker.service.d
         state: directory    
        
-    - name: Config Docker Daemon
+    - name: Config templates
       template: 
         src: "{{ item.src }}"
         dest: "{{ item.dest }}"
       loop:
         - {src: "templates/daemon.json", dest: "/etc/docker/daemon.json"}
         - {src: "templates/override.conf", dest: "/etc/systemd/system/docker.service.d/override.conf"}
-    
-    - name: Install Docker Compose
-      shell: sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && sudo chmod +x /usr/local/bin/docker-compose && sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
-      when: firsttime_fs.changed    
+        - {src: "templates/minikube.service", dest: "/etc/systemd/system/minikube.service"}
     
     - name: Reload systemctl config
-      shell: systemctl daemon-reload
-      when: firsttime_fs.changed      
+      shell: systemctl daemon-reload      
     
     - name: Ensure Docker service started
       service: 
@@ -96,28 +106,20 @@
       loop: 
         - "docker"
         - "containerd"
-        
-    - name: Get Kubectl repository key 
-      apt_key: 
-        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg 
-        state: present    
-        
-    - name: Add Kubectl repository
-      shell: echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee -a /etc/apt/sources.list.d/kubernetes.list
 
-    - name: Update apt cache
-      apt: 
-        update_cache: yes    
-        
-    - name: Install Kubectl
-      apt: 
-        name: ['kubectl']
-        state: present    
-        
-    - name: Install minikube
-      shell: curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && chmod +x minikube && install minikube /usr/local/bin/
-      when: firsttime_fs.changed
-      
-    - name: Install and Start minikube
+    - name: First Start minikube
       shell: minikube start --vm-driver=docker
-      when: firsttime_fs.changed  
+      become: true
+      become_user: vagrant
+      
+    - name: Stop minikube
+      shell: minikube stop
+      become: true
+      become_user: vagrant
+    
+    - name: Enable service minikube
+      service:
+         name: minikube
+         enabled: yes
+         state: started
+        
