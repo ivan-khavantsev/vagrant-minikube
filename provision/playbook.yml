@@ -71,13 +71,14 @@
       loop: 
         - "docker"
         - "containerd"    
-        
+    
     - name: Install minikube
-      shell: curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && chmod +x minikube && install minikube /usr/local/bin/    
-      register: install_minikube
-      args: 
-        creates: /usr/local/bin/minikube
-        
+      get_url:
+        url: https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+        dest: /usr/local/bin/minikube
+        mode: '0755'
+      register: install_minikube 
+    
     - name: Create a docker service directory if it does not exist
       file:
         path: /etc/systemd/system/docker.service.d
@@ -107,12 +108,12 @@
 
     - name: First Start minikube
       shell: minikube start --vm-driver=docker
-      become_user: vagrant
+      become: false
       when: install_minikube.changed
       
     - name: Stop minikube
       shell: minikube stop
-      become_user: vagrant
+      become: false
       when: install_minikube.changed
     
     - name: Enable service minikube
