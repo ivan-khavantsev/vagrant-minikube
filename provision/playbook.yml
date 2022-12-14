@@ -120,10 +120,5 @@
          name: minikube
          enabled: yes
          state: started
-    
-    - name: Install Kubernetes Dashboard
-      shell: kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.6.1/aio/deploy/recommended.yaml
-      become_user: vagrant
-      when: install_minikube.changed
       
         
