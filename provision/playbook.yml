@@ -15,7 +15,7 @@
         creates: /home/vagrant/.provisioned_fs
     
     - name: Extend File system to full disk
-      shell: sudo resize2fs /dev/sda1
+      shell: resize2fs /dev/sda1
       when: firsttime_fs.changed
 
     - name: Update apt cache
@@ -33,7 +33,7 @@
         state: present    
         
     - name: Add Kubectl repository
-      shell: echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee -a /etc/apt/sources.list.d/kubernetes.list
+      shell: echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | tee -a /etc/apt/sources.list.d/kubernetes.list
 
 
     - name: Get Docker repository key 
@@ -42,7 +42,7 @@
         state: present 
     
     - name: Add Docker repository
-      shell: echo "deb https://download.docker.com/linux/debian $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+      shell: echo "deb https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
 
     - name: Update apt cache
       apt: 
@@ -52,11 +52,6 @@
       apt: 
         name: ['docker-ce', 'docker-ce-cli', 'containerd.io', 'kubectl']
         state: present
-        
-    - name: Config Docker Daemon
-      template: 
-        src: templates/daemon.json
-        dest: /etc/docker/daemon.json
         
     - name: Create Docker group
       group:
@@ -79,6 +74,7 @@
         
     - name: Install minikube
       shell: curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && chmod +x minikube && install minikube /usr/local/bin/    
+      register: install_minikube
       args: 
         creates: /usr/local/bin/minikube
         
@@ -87,7 +83,8 @@
         path: /etc/systemd/system/docker.service.d
         state: directory    
        
-    - name: Config templates
+    - name: Install config templates
+      register: install_templates
       template: 
         src: "{{ item.src }}"
         dest: "{{ item.dest }}"
@@ -97,7 +94,8 @@
         - {src: "templates/minikube.service", dest: "/etc/systemd/system/minikube.service"}
     
     - name: Reload systemctl config
-      shell: systemctl daemon-reload      
+      shell: systemctl daemon-reload
+      when: install_templates.changed
     
     - name: Ensure Docker service started
       service: 
@@ -109,17 +107,23 @@
 
     - name: First Start minikube
       shell: minikube start --vm-driver=docker
-      become: true
       become_user: vagrant
+      when: install_minikube.changed
       
     - name: Stop minikube
       shell: minikube stop
-      become: true
       become_user: vagrant
+      when: install_minikube.changed
     
     - name: Enable service minikube
       service:
          name: minikube
          enabled: yes
          state: started
+    
+    - name: Install Kubernetes Dashboard
+      shell: kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.6.1/aio/deploy/recommended.yaml
+      become_user: vagrant
+      when: install_minikube.changed
+      
         
