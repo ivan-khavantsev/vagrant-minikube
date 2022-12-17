@@ -15,6 +15,9 @@ spec:
       containers:
       - name: server1
         image: server1:1.2
+        volumeMounts:
+        - mountPath: /test-volume
+          name: test-volume
         #imagePullPolicy: Never
         #imagePullPolicy: Always
         ports:
@@ -27,7 +30,11 @@ spec:
           timeoutSeconds: 1
           successThreshold: 1
           failureThreshold: 3
-        
+      volumes:
+      - name: test-volume
+        hostPath:
+          path: /volumes/test-volume
+          type: DirectoryOrCreate
 ---
 
 apiVersion: v1
