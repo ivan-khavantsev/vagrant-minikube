@@ -12,7 +12,6 @@ Vagrant.configure("2") do |config|
 		
 		minikube.vm.provider "virtualbox" do |virtualbox|
 			virtualbox.memory = "3000"
-			virtualbox.customize ["setextradata", :id, "VBoxInternal2/SharedFoldersEnableSymlinksCreate/v-root", "1"]
 		end
 	
 		minikube.vm.network "private_network", ip: "192.168.56.4"
