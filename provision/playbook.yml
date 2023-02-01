@@ -112,7 +112,6 @@
       
     - name: Stop minikube
       shell: minikube stop
-      become: false
       when: install_minikube.changed
     
     - name: Enable service minikube
