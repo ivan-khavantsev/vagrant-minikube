@@ -35,7 +35,6 @@
     - name: Add Kubectl repository
       shell: echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | tee -a /etc/apt/sources.list.d/kubernetes.list
 
-
     - name: Get Docker repository key 
       apt_key: 
         url: https://download.docker.com/linux/debian/gpg 
@@ -107,11 +106,13 @@
         - "containerd"
 
     - name: First Start minikube
-      shell: minikube start --force --vm-driver=docker
+      shell: sg - docker -c "minikube start --vm-driver=docker"
+      become: false
       when: install_minikube.changed
       
     - name: Stop minikube
       shell: minikube stop
+      become: false
       when: install_minikube.changed
     
     - name: Enable service minikube
