@@ -111,7 +111,7 @@
       when: install_minikube.changed
       
     - name: Stop minikube
-      shell: minikube stop
+      shell: sg - docker -c "minikube stop"
       become: false
       when: install_minikube.changed
     
