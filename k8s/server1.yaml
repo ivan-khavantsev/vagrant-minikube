@@ -14,17 +14,17 @@ spec:
     spec:
       containers:
       - name: server1
-        image: server1:1.2
+        image: server1:latest
         volumeMounts:
         - mountPath: /test-volume
           name: test-volume
-        #imagePullPolicy: Never
+        imagePullPolicy: Never
         #imagePullPolicy: Always
         ports:
-        - containerPort: 8080
+        - containerPort: 8081
         livenessProbe:
           tcpSocket:
-            port: 8080
+            port: 8081
           initialDelaySeconds: 10
           periodSeconds: 5
           timeoutSeconds: 1
@@ -46,7 +46,7 @@ metadata:
 spec:
   type: LoadBalancer
   ports:
-  - port: 8080
+  - port: 8081
     protocol: TCP
   selector:
     app: server1

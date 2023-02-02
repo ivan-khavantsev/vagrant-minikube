@@ -4,9 +4,10 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 public class Main {
+	public static final int PORT = 8081;
     public static void main(String[] args) throws Exception {
-		System.out.println("started");
-        ServerSocket serverSocket = new ServerSocket(8080);
+		System.out.println("started at " + PORT);
+        ServerSocket serverSocket = new ServerSocket(PORT);
         while (true){
             Socket clientSocket = serverSocket.accept();
             new Thread(() -> {

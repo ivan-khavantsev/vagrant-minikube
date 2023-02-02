@@ -4,7 +4,7 @@ After=docker.service
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/bin/minikube start
+ExecStart=/usr/local/bin/minikube start --listen-address='0.0.0.0'
 RemainAfterExit=true
 ExecStop=/usr/local/bin/minikube stop
 StandardOutput=journal
