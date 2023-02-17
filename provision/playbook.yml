@@ -102,8 +102,8 @@
         name: "{{ item }}"
         state: started
       loop: 
-        - "docker"
         - "containerd"
+        - "docker"
 
     - name: First Start minikube
       shell: sg - docker -c "minikube start --vm-driver=docker"
