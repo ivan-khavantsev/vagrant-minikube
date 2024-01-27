@@ -8,23 +8,13 @@
       community.general.timezone:
         name: Asia/Almaty  
 
-    - name: First time extend fs
-      command: touch /home/vagrant/.provisioned_fs
-      register: firsttime_fs
-      args:
-        creates: /home/vagrant/.provisioned_fs
-    
-    - name: Extend File system to full disk
-      shell: resize2fs /dev/sda1
-      when: firsttime_fs.changed
-
     - name: Update apt cache
       apt: 
         update_cache: yes
     
     - name: Install System Utilites
       apt: 
-        name: ['mc', 'ca-certificates', 'curl', 'gnupg', 'lsb-release']
+        name: ['mc', 'ca-certificates', 'curl', 'gnupg', 'lsb-release', 'apt-transport-https']
         state: present
 
     - name: Get Kubectl repository key 
@@ -34,6 +24,14 @@
         
     - name: Add Kubectl repository
       shell: echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | tee -a /etc/apt/sources.list.d/kubernetes.list
+
+    - name: Get Helm repository key 
+      apt_key: 
+        url: https://baltocdn.com/helm/signing.asc 
+        state: present 
+
+    - name: Add Helm repository
+      shell: echo "deb https://baltocdn.com/helm/stable/debian/ all main" | tee -a /etc/apt/sources.list.d/helm.list
 
     - name: Get Docker repository key 
       apt_key: 
@@ -49,7 +47,7 @@
 
     - name: Install Docker, Kubectl
       apt: 
-        name: ['docker-ce', 'docker-ce-cli', 'containerd.io', 'kubectl']
+        name: ['docker-ce', 'docker-ce-cli', 'containerd.io', 'kubectl', 'helm']
         state: present
         
     - name: Create Docker group
